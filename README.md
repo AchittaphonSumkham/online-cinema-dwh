@@ -36,3 +36,7 @@ Execute against Oracle in this order, each in its own schema/user:
 2. `SQL/Datawarehouse.txt` to create the warehouse tables (fill in the database link placeholders `<username>`, `<password>`, `<db_host>`, `<service_name>` with your own connection details).
 3. `SQL/Staging.txt` to create the staging layer, run the MERGEs, then load the warehouse.
 4. Open the `.pbix` files in Power BI Desktop and point them at your warehouse.
+
+## Planned improvements
+
+- Add load auditing to the staging layer (`LoadStatus`, `ErrorMessage`, `LastUpdatedTime`) so each row records whether its load into the warehouse succeeded or failed.
