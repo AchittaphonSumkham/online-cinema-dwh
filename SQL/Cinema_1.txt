@@ -1,0 +1,345 @@
+//Cinema1
+CREATE  TABLE  MemberType
+	(MemTypeCode		CHAR(3)		PRIMARY  KEY,
+	  MemTypeName 		VARCHAR2(20)	NOT  NULL,
+	  MemTypeDiscount  	NUMBER(2));
+
+CREATE  TABLE  EventType
+	(EvTypeCode		CHAR(3)		PRIMARY  KEY,
+	  EvTypeName 		VARCHAR2(20)	NOT  NULL,
+	EEvTypeDescription	VARCHAR2(40));
+
+CREATE  TABLE  Licensor
+	(LicCode		CHAR(3)		PRIMARY  KEY,
+	 LicName 		VARCHAR2(20)	NOT  NULL,
+	 LicEmail 		VARCHAR2(30)	NOT  NULL,
+	LicTel 		VARCHAR2(15)	NOT  NULL);
+
+CREATE  TABLE  Member
+	(MemCode		CHAR(3)		PRIMARY  KEY,
+	 MemName 		VARCHAR2(20)	NOT  NULL,
+	MemTel		VARCHAR2(15)	NOT  NULL,
+	  MemSTDate  	DATE,	
+	MemEndDate	DATE,
+	MemTypeCode CHAR(3),
+	CONSTRAINT	Fk_MemType	FOREIGN  KEY(MemTypeCode)
+		REFERENCES		MemberType(MemTypeCode));
+
+CREATE  TABLE  Movie
+	(MovieCode		CHAR(3)		PRIMARY  KEY,
+	 MovieName 		VARCHAR2(20)	NOT  NULL,
+	 MovieTitle 		VARCHAR2(50)	NOT  NULL,
+	MovieWriter 		VARCHAR2(20)	NOT  NULL,
+	MovieDirector 		VARCHAR2(20)	NOT  NULL,
+	MovieRating 		NUMBER(2),
+	MovieDuration 		DATE ,
+	MovieCost 		NUMBER(4)	NOT NULL,
+	LicCode		CHAR(3),
+	CONSTRAINT	Fk_Lic	FOREIGN  KEY(LicCode)
+		REFERENCES		Licensor(LicCode));
+
+CREATE  TABLE  Ticket
+	(TicketCode		NUMBER(4)	PRIMARY  KEY,
+	  TicketDate 		DATE,
+	  MemCode		CHAR(3),
+	CONSTRAINT	Fk_Mem	FOREIGN  KEY(MemCode)
+		REFERENCES		Member(MemCode));
+
+CREATE  TABLE  ShowTime
+	(SHTCode		CHAR(4)	PRIMARY  KEY,
+	  SHTSTTime		DATE,
+	  SHTEndTime		DATE,
+	SHTLang			VARCHAR2(15),
+	SHTCapacity		NUMBER(3),
+	MovieCode		CHAR(3),
+	CONSTRAINT	Fk_Movie	FOREIGN  KEY(MovieCode)
+		REFERENCES		Movie(MovieCode));
+
+CREATE TABLE ShowTime_Ticket
+(
+  SHTCode     CHAR(4),        TicketCode  NUMBER(4),    
+  CONSTRAINT pk_ShowTime_Ticket PRIMARY KEY (SHTCode, TicketCode),   
+  CONSTRAINT fk_ShowTime FOREIGN KEY (SHTCode) REFERENCES ShowTime(SHTCode),   
+  CONSTRAINT fk_Ticket FOREIGN KEY (TicketCode) REFERENCES Ticket(TicketCode)  
+);
+
+CREATE  TABLE  Event
+	(EventCode		CHAR(3)		PRIMARY  KEY,
+	  EventName 		VARCHAR2(20)	NOT  NULL,
+	EventSTDate		DATE,
+	EvenEndDate		DATE,
+	EvTypeCode		CHAR(3),
+	SHTCode			CHAR(4),
+	CONSTRAINT	Fk_EvType	FOREIGN  KEY(EvTypeCode)
+		REFERENCES		EventType(EvTypeCode),
+	CONSTRAINT	Fk_SHT	FOREIGN  KEY(SHTCode)
+		REFERENCES		ShowTime(SHTCode));
+
+
+CREATE TABLE DetailEvent
+(
+  DetailEventID  NUMBER(10) PRIMARY KEY,  -- Surrogate Key เป็น Primary Key หลัก
+  EventCode      CHAR(3),                 -- Foreign Key เชื่อมไปยัง Event
+  Score          NUMBER(4),      	  -- Score ของ Detail Event
+  Discount       NUMBER(2),               -- Discount ของ Detail Event
+  TicketCode     NUMBER(4),               -- Foreign Key เชื่อมไปยัง Ticket
+  CONSTRAINT Fk_Event FOREIGN KEY (EventCode) REFERENCES Event(EventCode), 
+  CONSTRAINT Fk_DetailEvent_Ticket FOREIGN KEY (TicketCode) REFERENCES Ticket(TicketCode)  
+);
+
+----------------------------------------------------------------------------------------------------------
+PL/SQL
+
+//Cinema_1
+BEGIN
+    INSERT INTO MemberType (MemTypeCode, MemTypeName, MemTypeDiscount) VALUES ('STD', 'Standard', 10);
+    INSERT INTO MemberType (MemTypeCode, MemTypeName, MemTypeDiscount) VALUES ('PRM', 'Premium', 20);
+    INSERT INTO MemberType (MemTypeCode, MemTypeName, MemTypeDiscount) VALUES ('VIP', 'VIP Member', 30);
+    INSERT INTO MemberType (MemTypeCode, MemTypeName, MemTypeDiscount) VALUES ('STU', 'Student', 15);
+    INSERT INTO MemberType (MemTypeCode, MemTypeName, MemTypeDiscount) VALUES ('SNR', 'Senior', 25);
+    COMMIT;
+END;
+/
+
+BEGIN
+    INSERT INTO EventType (EvTypeCode, EvTypeName, EEvTypeDescription)
+    VALUES ('T01', 'Promotion', 'Discount or giveaway activity');
+
+    INSERT INTO EventType (EvTypeCode, EvTypeName, EEvTypeDescription)
+    VALUES ('T02', 'Film Festival', 'Special screening event');
+
+    INSERT INTO EventType (EvTypeCode, EvTypeName, EEvTypeDescription)
+    VALUES ('T03', 'Special Screening', 'VIP or exclusive group session');
+
+    INSERT INTO EventType (EvTypeCode, EvTypeName, EEvTypeDescription)
+    VALUES ('T04', 'Movie Premiere', 'First public screening of a new movie');
+
+    INSERT INTO EventType (EvTypeCode, EvTypeName, EEvTypeDescription)
+    VALUES ('T05', 'Fan Event', 'Fan meeting or event with actors');
+
+    COMMIT;
+END;
+/
+
+BEGIN
+    INSERT INTO Licensor (LicCode, LicName, LicEmail, LicTel)
+    VALUES ('L01', 'Warner Bros', 'contact@warner.com', '02-123-4567');
+
+    INSERT INTO Licensor (LicCode, LicName, LicEmail, LicTel)
+    VALUES ('L02', 'Disney', 'support@disney.com', '02-234-5678');
+
+    INSERT INTO Licensor (LicCode, LicName, LicEmail, LicTel)
+    VALUES ('L03', 'Universal', 'info@universal.com', '02-345-6789');
+
+    INSERT INTO Licensor (LicCode, LicName, LicEmail, LicTel)
+    VALUES ('L04', 'GDH 559', 'contact@gdh.com', '02-456-7890');
+
+    INSERT INTO Licensor (LicCode, LicName, LicEmail, LicTel)
+    VALUES ('L05', 'Netflix', 'partner@netflix.com', '02-567-8901');
+
+    COMMIT;
+END;
+/
+
+BEGIN
+    INSERT INTO Member (MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode)
+    VALUES ('M01', 'Araya Wattanakul', '0812345678', TO_DATE('01/01/23','DD/MM/YY'), NULL, 'STD');
+
+    INSERT INTO Member (MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode)
+    VALUES ('M02', 'Teerapat Sombun', '0823456789', TO_DATE('15/03/23','DD/MM/YY'), NULL, 'PRM');
+
+    INSERT INTO Member (MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode)
+    VALUES ('M03', 'Warunee Chankit', '0834567890', TO_DATE('20/06/22','DD/MM/YY'), TO_DATE('20/06/24','DD/MM/YY'), 'STU');
+
+    INSERT INTO Member (MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode)
+    VALUES ('M04', 'Nitipong Channarong', '0845678901', TO_DATE('01/11/22','DD/MM/YY'), NULL, 'VIP');
+
+    INSERT INTO Member (MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode)
+    VALUES ('M05', 'Suppakorn Pitakthai', '0856789012', TO_DATE('12/09/21','DD/MM/YY'), TO_DATE('12/09/23','DD/MM/YY'), 'SNR');
+
+    INSERT INTO Member (MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode)
+    VALUES ('M06', 'Nattawut Thongdee', '0867890123', TO_DATE('10/07/23','DD/MM/YY'), NULL, 'STD');
+
+    INSERT INTO Member (MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode)
+    VALUES ('M07', 'Paveena Soisuk', '0878901234', TO_DATE('22/08/22','DD/MM/YY'), TO_DATE('22/08/24','DD/MM/YY'), 'STU');
+
+    INSERT INTO Member (MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode)
+    VALUES ('M08', 'Jetsada Duangjai', '0889012345', TO_DATE('05/12/23','DD/MM/YY'), NULL, 'VIP');
+
+    INSERT INTO Member (MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode)
+    VALUES ('M09', 'Sasithorn Khammueng', '0890123456', TO_DATE('18/04/21','DD/MM/YY'), TO_DATE('18/04/23','DD/MM/YY'), 'SNR');
+
+    INSERT INTO Member (MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode)
+    VALUES ('M10', 'Kriangsak Wongdee', '0801234567', TO_DATE('02/02/24','DD/MM/YY'), NULL, 'PRM');
+
+    COMMIT;
+END;
+/
+
+
+BEGIN
+    INSERT INTO Movie (MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector, MovieRating, MovieDuration, MovieCost, LicCode)
+    VALUES ('M01', 'Inception', 'Inception (2010)', 'Christopher Nolan', 'Christopher Nolan', 13, TO_DATE('31/12/25','DD/MM/YY'), 1200, 'L01'); 
+
+    INSERT INTO Movie (MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector, MovieRating, MovieDuration, MovieCost, LicCode)
+    VALUES ('M02', 'Frozen', 'Frozen II', 'Jennifer Lee', 'Chris Buck', 0, TO_DATE('30/06/25','DD/MM/YY'), 900, 'L02'); 
+
+    INSERT INTO Movie (MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector, MovieRating, MovieDuration, MovieCost, LicCode)
+    VALUES ('M03', 'Fast9', 'Fast and Furious 9', 'Daniel Casey', 'Justin Lin', 15, TO_DATE('31/03/25','DD/MM/YY'), 1500, 'L03'); 
+
+    INSERT INTO Movie (MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector, MovieRating, MovieDuration, MovieCost, LicCode)
+    VALUES ('M04', 'Friend Zone', 'Friend Zone: Warning...End of the Friendship Line', 'Thanit Jitnukul', 'Chayanop Boonprakob', 13, TO_DATE('30/11/24','DD/MM/YY'), 700, 'L04'); 
+
+    INSERT INTO Movie (MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector, MovieRating, MovieDuration, MovieCost, LicCode)
+    VALUES ('M05', 'Red Notice', 'Red Notice (2021)', 'Rawson Thurber', 'Rawson Thurber', 18, TO_DATE('30/09/25','DD/MM/YY'), 1300, 'L05'); 
+
+    INSERT INTO Movie (MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector, MovieRating, MovieDuration, MovieCost, LicCode)
+    VALUES ('M06', 'Tenet', 'TENET', 'Christopher Nolan', 'Christopher Nolan', 15, TO_DATE('31/12/24','DD/MM/YY'), 1100, 'L01'); 
+
+    INSERT INTO Movie (MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector, MovieRating, MovieDuration, MovieCost, LicCode)
+    VALUES ('M07', 'Soul', 'Soul (2020)', 'Pete Docter', 'Pete Docter', 0, TO_DATE('30/06/25','DD/MM/YY'), 850, 'L02'); 
+
+    INSERT INTO Movie (MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector, MovieRating, MovieDuration, MovieCost, LicCode)
+    VALUES ('M08', 'Minions', 'Minions: The Rise of Gru', 'Brian Lynch', 'Kyle Balda', 0, TO_DATE('30/05/25','DD/MM/YY'), 950, 'L03'); 
+
+    INSERT INTO Movie (MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector, MovieRating, MovieDuration, MovieCost, LicCode)
+    VALUES ('M09', 'Bad Genius', 'Bad Genius', 'Nattawut Poonpiriya', 'Nattawut Poonpiriya', 13, TO_DATE('31/08/24','DD/MM/YY'), 600, 'L04'); 
+
+    INSERT INTO Movie (MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector, MovieRating, MovieDuration, MovieCost, LicCode)
+    VALUES ('M10', 'The Gray Man', 'The Gray Man (2022)', 'Joe Russo', 'Anthony Russo', 18, TO_DATE('31/10/25','DD/MM/YY'), 1400, 'L05'); 
+
+    COMMIT;
+END;
+/
+
+BEGIN
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0001, TO_DATE('01/03/24 13:15', 'DD/MM/YY HH24:MI'), 'M01');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0002, TO_DATE('01/03/24 13:15', 'DD/MM/YY HH24:MI'), 'M02');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0003, TO_DATE('02/03/24 10:00', 'DD/MM/YY HH24:MI'), 'M03');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0004, TO_DATE('02/03/24 16:00', 'DD/MM/YY HH24:MI'), 'M04');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0005, TO_DATE('03/03/24 18:30', 'DD/MM/YY HH24:MI'), 'M05');
+
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0006, TO_DATE('03/03/24 18:30', 'DD/MM/YY HH24:MI'), 'M01');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0007, TO_DATE('04/03/24 11:00', 'DD/MM/YY HH24:MI'), 'M06');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0008, TO_DATE('04/03/24 14:00', 'DD/MM/YY HH24:MI'), 'M07');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0009, TO_DATE('05/03/24 10:30', 'DD/MM/YY HH24:MI'), 'M08');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0010, TO_DATE('05/03/24 17:00', 'DD/MM/YY HH24:MI'), 'M09');
+
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0011, TO_DATE('06/03/24 12:00', 'DD/MM/YY HH24:MI'), 'M10');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0012, TO_DATE('06/03/24 12:00', 'DD/MM/YY HH24:MI'), 'M02');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0013, TO_DATE('07/03/24 15:00', 'DD/MM/YY HH24:MI'), 'M03');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0014, TO_DATE('07/03/24 15:00', 'DD/MM/YY HH24:MI'), 'M04');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0015, TO_DATE('08/03/24 09:30', 'DD/MM/YY HH24:MI'), 'M05');
+
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0016, TO_DATE('08/03/24 09:30', 'DD/MM/YY HH24:MI'), 'M06');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0017, TO_DATE('09/03/24 14:30', 'DD/MM/YY HH24:MI'), 'M07');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0018, TO_DATE('09/03/24 19:00', 'DD/MM/YY HH24:MI'), 'M08');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0019, TO_DATE('10/03/24 11:45', 'DD/MM/YY HH24:MI'), 'M09');
+    INSERT INTO Ticket (TicketCode, TicketDate, MemCode) VALUES (0020, TO_DATE('10/03/24 20:15', 'DD/MM/YY HH24:MI'), 'M10');
+
+    COMMIT;
+END;
+/
+
+BEGIN
+  INSERT INTO ShowTime VALUES ('S001', TO_DATE('01/03/24 10:00', 'DD/MM/YY HH24:MI'), TO_DATE('01/03/24 12:30', 'DD/MM/YY HH24:MI'), 'Thai', 120, 'M01');
+  INSERT INTO ShowTime VALUES ('S002', TO_DATE('01/03/24 14:00', 'DD/MM/YY HH24:MI'), TO_DATE('01/03/24 16:00', 'DD/MM/YY HH24:MI'), 'English', 100, 'M02');
+  INSERT INTO ShowTime VALUES ('S003', TO_DATE('02/03/24 17:00', 'DD/MM/YY HH24:MI'), TO_DATE('02/03/24 19:30', 'DD/MM/YY HH24:MI'), 'Thai', 90, 'M03');
+  INSERT INTO ShowTime VALUES ('S004', TO_DATE('03/03/24 09:00', 'DD/MM/YY HH24:MI'), TO_DATE('03/03/24 11:00', 'DD/MM/YY HH24:MI'), 'English', 130, 'M04');
+  INSERT INTO ShowTime VALUES ('S005', TO_DATE('03/03/24 13:00', 'DD/MM/YY HH24:MI'), TO_DATE('03/03/24 15:30', 'DD/MM/YY HH24:MI'), 'Thai', 110, 'M05');
+  INSERT INTO ShowTime VALUES ('S006', TO_DATE('04/03/24 15:00', 'DD/MM/YY HH24:MI'), TO_DATE('04/03/24 17:30', 'DD/MM/YY HH24:MI'), 'English', 90, 'M06');
+  INSERT INTO ShowTime VALUES ('S007', TO_DATE('05/03/24 10:00', 'DD/MM/YY HH24:MI'), TO_DATE('05/03/24 12:00', 'DD/MM/YY HH24:MI'), 'Thai', 140, 'M07');
+  INSERT INTO ShowTime VALUES ('S008', TO_DATE('06/03/24 13:30', 'DD/MM/YY HH24:MI'), TO_DATE('06/03/24 15:30', 'DD/MM/YY HH24:MI'), 'English', 100, 'M08');
+  INSERT INTO ShowTime VALUES ('S009', TO_DATE('07/03/24 18:00', 'DD/MM/YY HH24:MI'), TO_DATE('07/03/24 20:30', 'DD/MM/YY HH24:MI'), 'Thai', 150, 'M09');
+  INSERT INTO ShowTime VALUES ('S010', TO_DATE('08/03/24 20:00', 'DD/MM/YY HH24:MI'), TO_DATE('08/03/24 22:30', 'DD/MM/YY HH24:MI'), 'English', 80, 'M10');
+
+  -- เพิ่มรอบใหม่ของหนังซ้ำ
+  INSERT INTO ShowTime VALUES ('S011', TO_DATE('09/03/24 10:00', 'DD/MM/YY HH24:MI'), TO_DATE('09/03/24 12:00', 'DD/MM/YY HH24:MI'), 'Thai', 120, 'M01');
+  INSERT INTO ShowTime VALUES ('S012', TO_DATE('09/03/24 13:00', 'DD/MM/YY HH24:MI'), TO_DATE('09/03/24 15:00', 'DD/MM/YY HH24:MI'), 'English', 100, 'M02');
+  INSERT INTO ShowTime VALUES ('S013', TO_DATE('10/03/24 16:00', 'DD/MM/YY HH24:MI'), TO_DATE('10/03/24 18:00', 'DD/MM/YY HH24:MI'), 'Thai', 90, 'M03');
+  INSERT INTO ShowTime VALUES ('S014', TO_DATE('10/03/24 19:00', 'DD/MM/YY HH24:MI'), TO_DATE('10/03/24 21:30', 'DD/MM/YY HH24:MI'), 'English', 130, 'M04');
+  INSERT INTO ShowTime VALUES ('S015', TO_DATE('11/03/24 10:00', 'DD/MM/YY HH24:MI'), TO_DATE('11/03/24 12:30', 'DD/MM/YY HH24:MI'), 'Thai', 100, 'M05');
+  INSERT INTO ShowTime VALUES ('S016', TO_DATE('11/03/24 14:00', 'DD/MM/YY HH24:MI'), TO_DATE('11/03/24 16:30', 'DD/MM/YY HH24:MI'), 'English', 120, 'M06');
+  INSERT INTO ShowTime VALUES ('S017', TO_DATE('12/03/24 09:30', 'DD/MM/YY HH24:MI'), TO_DATE('12/03/24 12:00', 'DD/MM/YY HH24:MI'), 'Thai', 140, 'M07');
+  INSERT INTO ShowTime VALUES ('S018', TO_DATE('12/03/24 13:00', 'DD/MM/YY HH24:MI'), TO_DATE('12/03/24 15:30', 'DD/MM/YY HH24:MI'), 'English', 100, 'M08');
+  INSERT INTO ShowTime VALUES ('S019', TO_DATE('13/03/24 17:00', 'DD/MM/YY HH24:MI'), TO_DATE('13/03/24 19:30', 'DD/MM/YY HH24:MI'), 'Thai', 150, 'M09');
+  INSERT INTO ShowTime VALUES ('S020', TO_DATE('13/03/24 20:00', 'DD/MM/YY HH24:MI'), TO_DATE('13/03/24 22:30', 'DD/MM/YY HH24:MI'), 'English', 90, 'M10');
+
+  COMMIT;
+END;
+/
+
+BEGIN
+  INSERT INTO ShowTime_Ticket VALUES ('S001', 0001);
+  INSERT INTO ShowTime_Ticket VALUES ('S002', 0002);
+  INSERT INTO ShowTime_Ticket VALUES ('S003', 0003);
+  INSERT INTO ShowTime_Ticket VALUES ('S004', 0004);
+  INSERT INTO ShowTime_Ticket VALUES ('S005', 0005);
+
+  INSERT INTO ShowTime_Ticket VALUES ('S006', 0006);
+  INSERT INTO ShowTime_Ticket VALUES ('S007', 0007);
+  INSERT INTO ShowTime_Ticket VALUES ('S008', 0008);
+  INSERT INTO ShowTime_Ticket VALUES ('S009', 0009);
+  INSERT INTO ShowTime_Ticket VALUES ('S010', 0010);
+
+  INSERT INTO ShowTime_Ticket VALUES ('S011', 0011);
+  INSERT INTO ShowTime_Ticket VALUES ('S012', 0012);
+  INSERT INTO ShowTime_Ticket VALUES ('S013', 0013);
+  INSERT INTO ShowTime_Ticket VALUES ('S014', 0014);
+  INSERT INTO ShowTime_Ticket VALUES ('S015', 0015);
+
+  INSERT INTO ShowTime_Ticket VALUES ('S016', 0016);
+  INSERT INTO ShowTime_Ticket VALUES ('S017', 0017);
+  INSERT INTO ShowTime_Ticket VALUES ('S018', 0018);
+  INSERT INTO ShowTime_Ticket VALUES ('S019', 0019);
+  INSERT INTO ShowTime_Ticket VALUES ('S020', 0020);
+
+  COMMIT;
+END;
+/
+
+BEGIN
+  INSERT INTO Event VALUES ('E01', 'Buy 1 Get 1', TO_DATE('01/03/24','DD/MM/YY'), TO_DATE('03/03/24','DD/MM/YY'), 'T01', 'S001');
+  INSERT INTO Event VALUES ('E02', 'Opening Week', TO_DATE('01/03/24','DD/MM/YY'), TO_DATE('05/03/24','DD/MM/YY'), 'T02', 'S002');
+  INSERT INTO Event VALUES ('E03', 'Nolan Special', TO_DATE('02/03/24','DD/MM/YY'), TO_DATE('04/03/24','DD/MM/YY'), 'T03', 'S003');
+  INSERT INTO Event VALUES ('E04', 'Member Night', TO_DATE('03/03/24','DD/MM/YY'), TO_DATE('06/03/24','DD/MM/YY'), 'T03', 'S004');
+  INSERT INTO Event VALUES ('E05', 'Frozen Promo', TO_DATE('04/03/24','DD/MM/YY'), TO_DATE('06/03/24','DD/MM/YY'), 'T01', 'S005');
+
+  INSERT INTO Event VALUES ('E06', 'Netflix Showcase', TO_DATE('05/03/24','DD/MM/YY'), TO_DATE('08/03/24','DD/MM/YY'), 'T04', 'S006');
+  INSERT INTO Event VALUES ('E07', 'Oscar Hits', TO_DATE('06/03/24','DD/MM/YY'), TO_DATE('10/03/24','DD/MM/YY'), 'T05', 'S007');
+  INSERT INTO Event VALUES ('E08', 'Animation Weekend', TO_DATE('07/03/24','DD/MM/YY'), TO_DATE('09/03/24','DD/MM/YY'), 'T02', 'S008');
+  INSERT INTO Event VALUES ('E09', 'Billion Baht Hits', TO_DATE('08/03/24','DD/MM/YY'), TO_DATE('12/03/24','DD/MM/YY'), 'T01', 'S009');
+  INSERT INTO Event VALUES ('E10', 'Closing Week', TO_DATE('09/03/24','DD/MM/YY'), TO_DATE('13/03/24','DD/MM/YY'), 'T05', 'S010');
+
+  COMMIT;
+END;
+/
+
+BEGIN
+  INSERT INTO DetailEvent VALUES (1,  'E01', 20, 10, 0001);
+  INSERT INTO DetailEvent VALUES (2,  'E01', 15,  5, 0002);
+  INSERT INTO DetailEvent VALUES (3,  'E02', 30,  0, 0003);
+  INSERT INTO DetailEvent VALUES (4,  'E03', 25, 10, 0004);
+  INSERT INTO DetailEvent VALUES (5,  'E04', 50,  5, 0005);
+
+  INSERT INTO DetailEvent VALUES (6,  'E04', 45,  5, 0006);
+  INSERT INTO DetailEvent VALUES (7,  'E05', 10, 15, 0007);
+  INSERT INTO DetailEvent VALUES (8,  'E06', 35,  0, 0008);
+  INSERT INTO DetailEvent VALUES (9,  'E07', 40,  0, 0009);
+  INSERT INTO DetailEvent VALUES (10, 'E08', 10, 20, 0010);
+
+  INSERT INTO DetailEvent VALUES (11, 'E09', 20, 10, 0011);
+  INSERT INTO DetailEvent VALUES (12, 'E09', 15,  5, 0012);
+  INSERT INTO DetailEvent VALUES (13, 'E03', 25,  5, 0013);
+  INSERT INTO DetailEvent VALUES (14, 'E02', 10,  0, 0014);
+  INSERT INTO DetailEvent VALUES (15, 'E05',  5, 10, 0015);
+
+  INSERT INTO DetailEvent VALUES (16, 'E06', 35,  0, 0016);
+  INSERT INTO DetailEvent VALUES (17, 'E07', 50,  5, 0017);
+  INSERT INTO DetailEvent VALUES (18, 'E10', 10,  5, 0018);
+  INSERT INTO DetailEvent VALUES (19, 'E08', 20, 10, 0019);
+  INSERT INTO DetailEvent VALUES (20, 'E10', 25,  0, 0020);
+
+  COMMIT;
+END;
+/

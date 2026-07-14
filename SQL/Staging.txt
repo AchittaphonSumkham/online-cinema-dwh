@@ -1,0 +1,561 @@
+CREATE TABLE ST_MemberType (
+    MemTypeCode CHAR(3) PRIMARY KEY,
+    MemTypeName VARCHAR2(20) NOT NULL,
+    MemTypeDiscount NUMBER(2),
+    SourceSystem VARCHAR2(50),
+    InsertedTime TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE TABLE ST_EventType (
+    EvTypeCode CHAR(3) PRIMARY KEY,
+    EvTypeName VARCHAR2(20) NOT NULL,
+    EvTypeDescription VARCHAR2(40),
+    SourceSystem VARCHAR2(50),
+    InsertedTime TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE TABLE ST_Licensor (
+    LicCode CHAR(3) PRIMARY KEY,
+    LicName VARCHAR2(20) NOT NULL,
+    LicEmail VARCHAR2(30) NOT NULL,
+    LicTel VARCHAR2(15) NOT NULL,
+    SourceSystem VARCHAR2(50),
+    InsertedTime TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE SEQUENCE ST_Member_Seq START WITH 1;
+CREATE TABLE ST_Member (
+    StagingID NUMBER PRIMARY KEY,
+    MemCode CHAR(3),
+    MemName VARCHAR2(20),
+    MemTel VARCHAR2(15),
+    MemSTDate DATE,
+    MemEndDate DATE,
+    MemTypeCode CHAR(3),
+    SourceSystem VARCHAR2(50),
+    InsertedTime TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE OR REPLACE TRIGGER TRG_ST_Member
+BEFORE INSERT ON ST_Member
+FOR EACH ROW
+BEGIN
+  SELECT ST_Member_Seq.NEXTVAL INTO :NEW.StagingID FROM DUAL;
+END;
+/
+
+CREATE SEQUENCE ST_Movie_Seq START WITH 1;
+CREATE TABLE ST_Movie (
+    StagingID NUMBER PRIMARY KEY,
+    MovieCode CHAR(3),
+    MovieName VARCHAR2(20),
+    MovieTitle VARCHAR2(50),
+    MovieWriter VARCHAR2(20),
+    MovieDirector VARCHAR2(20),
+    MovieRating NUMBER(2),
+    MovieDuration DATE,
+    MovieCost NUMBER(4),
+    LicCode CHAR(3),
+    SourceSystem VARCHAR2(50),
+    InsertedTime TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE OR REPLACE TRIGGER TRG_ST_Movie
+BEFORE INSERT ON ST_Movie
+FOR EACH ROW
+BEGIN
+  SELECT ST_Movie_Seq.NEXTVAL INTO :NEW.StagingID FROM DUAL;
+END;
+/
+
+CREATE SEQUENCE ST_Ticket_Seq START WITH 1;
+CREATE TABLE ST_Ticket (
+    StagingID NUMBER PRIMARY KEY,
+    TicketCode NUMBER(4),
+    TicketDate DATE,
+    MemCode CHAR(3),
+    SourceSystem VARCHAR2(50),
+    InsertedTime TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE OR REPLACE TRIGGER TRG_ST_Ticket
+BEFORE INSERT ON ST_Ticket
+FOR EACH ROW
+BEGIN
+  SELECT ST_Ticket_Seq.NEXTVAL INTO :NEW.StagingID FROM DUAL;
+END;
+/
+
+CREATE SEQUENCE ST_ShowTime_Seq START WITH 1;
+CREATE TABLE ST_ShowTime (
+    StagingID NUMBER PRIMARY KEY,
+    SHTCode CHAR(4),
+    SHTSTTime DATE,
+    SHTEndTime DATE,
+    SHTLang VARCHAR2(15),
+    SHTCapacity NUMBER(3),
+    MovieCode CHAR(3),
+    SourceSystem VARCHAR2(50),
+    InsertedTime TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE OR REPLACE TRIGGER TRG_ST_ShowTime
+BEFORE INSERT ON ST_ShowTime
+FOR EACH ROW
+BEGIN
+  SELECT ST_ShowTime_Seq.NEXTVAL INTO :NEW.StagingID FROM DUAL;
+END;
+/
+
+CREATE SEQUENCE ST_Event_Seq START WITH 1;
+CREATE TABLE ST_Event (
+    StagingID NUMBER PRIMARY KEY,
+    EventCode CHAR(3),
+    EventName VARCHAR2(20),
+    EventSTDate DATE,
+    EvenEndDate DATE,
+    EvTypeCode CHAR(3),
+    SHTCode CHAR(4),
+    SourceSystem VARCHAR2(50),
+    InsertedTime TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE OR REPLACE TRIGGER TRG_ST_Event
+BEFORE INSERT ON ST_Event
+FOR EACH ROW
+BEGIN
+  SELECT ST_Event_Seq.NEXTVAL INTO :NEW.StagingID FROM DUAL;
+END;
+/
+
+
+CREATE SEQUENCE ST_ShowTime_Ticket_Seq START WITH 1;
+CREATE TABLE ST_ShowTime_Ticket (
+    StagingID NUMBER PRIMARY KEY,
+    SHTCode CHAR(4),
+    TicketCode NUMBER(4),
+    SourceSystem VARCHAR2(50),
+    InsertedTime TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE OR REPLACE TRIGGER TRG_ST_ShowTime_Ticket
+BEFORE INSERT ON ST_ShowTime_Ticket
+FOR EACH ROW
+BEGIN
+  SELECT ST_ShowTime_Ticket_Seq.NEXTVAL INTO :NEW.StagingID FROM DUAL;
+END;
+/
+
+CREATE SEQUENCE ST_DetailEvent_Seq START WITH 1;
+CREATE TABLE ST_DetailEvent (
+    StagingID NUMBER PRIMARY KEY,
+    EventCode CHAR(3),
+    Score NUMBER(4),
+    Discount NUMBER(2),
+    TicketCode NUMBER(4),
+    SourceSystem VARCHAR2(50),
+    InsertedTime TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE OR REPLACE TRIGGER TRG_ST_DetailEvent
+BEFORE INSERT ON ST_DetailEvent
+FOR EACH ROW
+BEGIN
+  SELECT ST_DetailEvent_Seq.NEXTVAL INTO :NEW.StagingID FROM DUAL;
+END;
+/
+
+----------------------------------------------------------------
+MERGE INTO ST_MemberType tgt
+USING (
+  SELECT MemTypeCode, MemTypeName, MemTypeDiscount FROM cinema_1.MemberType
+) src
+ON (tgt.MemTypeCode = src.MemTypeCode)
+WHEN MATCHED THEN
+  UPDATE SET 
+    tgt.MemTypeName = src.MemTypeName,
+    tgt.MemTypeDiscount = src.MemTypeDiscount,
+    tgt.SourceSystem = 'cinema_1',
+    tgt.InsertedTime = SYSTIMESTAMP
+  WHERE (tgt.MemTypeName != src.MemTypeName OR tgt.MemTypeDiscount != src.MemTypeDiscount)
+
+WHEN NOT MATCHED THEN
+  INSERT (MemTypeCode, MemTypeName, MemTypeDiscount, SourceSystem, InsertedTime)
+  VALUES (src.MemTypeCode, src.MemTypeName, src.MemTypeDiscount, 'cinema_1', SYSTIMESTAMP);
+
+
+MERGE INTO ST_MemberType tgt
+USING (
+  SELECT MemTypeCode, MemTypeName, MemTypeDiscount FROM cinema_2.MemberType_B2
+) src
+ON (tgt.MemTypeCode = src.MemTypeCode)
+WHEN MATCHED THEN
+  UPDATE SET 
+    tgt.MemTypeName = src.MemTypeName,
+    tgt.MemTypeDiscount = src.MemTypeDiscount,
+    tgt.SourceSystem = 'cinema_2',
+    tgt.InsertedTime = SYSTIMESTAMP
+  WHERE (tgt.MemTypeName != src.MemTypeName OR tgt.MemTypeDiscount != src.MemTypeDiscount)
+
+WHEN NOT MATCHED THEN
+  INSERT (MemTypeCode, MemTypeName, MemTypeDiscount, SourceSystem, InsertedTime)
+  VALUES (src.MemTypeCode, src.MemTypeName, src.MemTypeDiscount, 'cinema_2', SYSTIMESTAMP);
+
+
+MERGE INTO ST_EventType tgt
+USING (
+  SELECT EvTypeCode, EvTypeName, EEvTypeDescription FROM cinema_1.EventType
+) src
+ON (tgt.EvTypeCode = src.EvTypeCode)
+WHEN MATCHED THEN
+  UPDATE SET
+    tgt.EvTypeName = src.EvTypeName,
+    tgt.EvTypeDescription = src.EEvTypeDescription,
+    tgt.SourceSystem = 'cinema_1',
+    tgt.InsertedTime = SYSTIMESTAMP
+  WHERE tgt.EvTypeName != src.EvTypeName
+     OR tgt.EvTypeDescription != src.EEvTypeDescription
+
+WHEN NOT MATCHED THEN
+  INSERT (EvTypeCode, EvTypeName, EvTypeDescription, SourceSystem, InsertedTime)
+  VALUES (src.EvTypeCode, src.EvTypeName, src.EEvTypeDescription, 'cinema_1', SYSTIMESTAMP);
+
+
+MERGE INTO ST_EventType tgt
+USING (
+  SELECT EvTypeCode, EvTypeName, EEvTypeDescription FROM cinema_2.EventType_B2
+) src
+ON (tgt.EvTypeCode = src.EvTypeCode)
+WHEN MATCHED THEN
+  UPDATE SET
+    tgt.EvTypeName = src.EvTypeName,
+    tgt.EvTypeDescription = src.EEvTypeDescription,
+    tgt.SourceSystem = 'cinema_2',
+    tgt.InsertedTime = SYSTIMESTAMP
+  WHERE tgt.EvTypeName != src.EvTypeName
+     OR tgt.EvTypeDescription != src.EEvTypeDescription
+
+WHEN NOT MATCHED THEN
+  INSERT (EvTypeCode, EvTypeName, EvTypeDescription, SourceSystem, InsertedTime)
+  VALUES (src.EvTypeCode, src.EvTypeName, src.EEvTypeDescription, 'cinema_2', SYSTIMESTAMP);
+
+MERGE INTO ST_Licensor tgt
+USING (
+  SELECT LicCode, LicName, LicEmail, LicTel FROM cinema_1.Licensor
+) src
+ON (tgt.LicCode = src.LicCode)
+WHEN MATCHED THEN
+  UPDATE SET
+    tgt.LicName = src.LicName,
+    tgt.LicEmail = src.LicEmail,
+    tgt.LicTel = src.LicTel,
+    tgt.SourceSystem = 'cinema_1',
+    tgt.InsertedTime = SYSTIMESTAMP
+  WHERE tgt.LicName != src.LicName
+     OR tgt.LicEmail != src.LicEmail
+     OR tgt.LicTel != src.LicTel
+
+WHEN NOT MATCHED THEN
+  INSERT (LicCode, LicName, LicEmail, LicTel, SourceSystem, InsertedTime)
+  VALUES (src.LicCode, src.LicName, src.LicEmail, src.LicTel, 'cinema_1', SYSTIMESTAMP);
+
+
+MERGE INTO ST_Licensor tgt
+USING (
+  SELECT LicCode, LicName, LicEmail, LicTel FROM cinema_2.Licensor_B2
+) src
+ON (tgt.LicCode = src.LicCode)
+WHEN MATCHED THEN
+  UPDATE SET
+    tgt.LicName = src.LicName,
+    tgt.LicEmail = src.LicEmail,
+    tgt.LicTel = src.LicTel,
+    tgt.SourceSystem = 'cinema_2',
+    tgt.InsertedTime = SYSTIMESTAMP
+  WHERE tgt.LicName != src.LicName
+     OR tgt.LicEmail != src.LicEmail
+     OR tgt.LicTel != src.LicTel
+
+WHEN NOT MATCHED THEN
+  INSERT (LicCode, LicName, LicEmail, LicTel, SourceSystem, InsertedTime)
+  VALUES (src.LicCode, src.LicName, src.LicEmail, src.LicTel, 'cinema_2', SYSTIMESTAMP);
+
+
+INSERT INTO ST_Member (
+    MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode,
+    'cinema_1', SYSTIMESTAMP
+FROM cinema_1.Member;
+
+INSERT INTO ST_Member (
+    MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode,
+    'cinema_2', SYSTIMESTAMP
+FROM cinema_2.Member_B2;
+
+
+INSERT INTO ST_Movie (
+    MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector,
+    MovieRating, MovieDuration, MovieCost, LicCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector,
+    MovieRating, MovieDuration, MovieCost, LicCode,
+    'cinema_1', SYSTIMESTAMP
+FROM cinema_1.Movie;
+
+
+INSERT INTO ST_Movie (
+    MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector,
+    MovieRating, MovieDuration, MovieCost, LicCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector,
+    MovieRating, MovieDuration, MovieCost, LicCode,
+    'cinema_2', SYSTIMESTAMP
+FROM cinema_2.Movie_B2;
+
+INSERT INTO ST_Ticket (
+    TicketCode, TicketDate, MemCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    TicketCode, TicketDate, MemCode,
+    'cinema_1', SYSTIMESTAMP
+FROM cinema_1.Ticket;
+
+INSERT INTO ST_Ticket (
+    TicketCode, TicketDate, MemCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    TicketCode, TicketDate, MemCode,
+    'cinema_2', SYSTIMESTAMP
+FROM cinema_2.Ticket_B2;
+
+
+INSERT INTO ST_ShowTime (
+    SHTCode, SHTSTTime, SHTEndTime, SHTLang, SHTCapacity, MovieCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    SHTCode, SHTSTTime, SHTEndTime, SHTLang, SHTCapacity, MovieCode,
+    'cinema_1', SYSTIMESTAMP
+FROM cinema_1.ShowTime;
+
+INSERT INTO ST_ShowTime (
+    SHTCode, SHTSTTime, SHTEndTime, SHTLang, SHTCapacity, MovieCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    SHTCode, SHTSTTime, SHTEndTime, SHTLang, SHTCapacity, MovieCode,
+    'cinema_2', SYSTIMESTAMP
+FROM cinema_2.ShowTime_B2;
+
+INSERT INTO ST_Event (
+    EventCode, EventName, EventSTDate, EvenEndDate, EvTypeCode, SHTCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    EventCode, EventName, EventSTDate, EvenEndDate, EvTypeCode, SHTCode,
+    'cinema_1', SYSTIMESTAMP
+FROM cinema_1.Event;
+
+INSERT INTO ST_Event (
+    EventCode, EventName, EventSTDate, EvenEndDate, EvTypeCode, SHTCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    EventCode, EventName, EventSTDate, EvenEndDate, EvTypeCode, SHTCode,
+    'cinema_2', SYSTIMESTAMP
+FROM cinema_2.Event_B2;
+
+INSERT INTO ST_ShowTime_Ticket (
+    SHTCode, TicketCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    SHTCode, TicketCode,
+    'cinema_1', SYSTIMESTAMP
+FROM cinema_1.ShowTime_Ticket;
+
+INSERT INTO ST_ShowTime_Ticket (
+    SHTCode, TicketCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    SHTCode, TicketCode,
+    'cinema_2', SYSTIMESTAMP
+FROM cinema_2.ShowTime_Ticket_B2;
+
+INSERT INTO ST_DetailEvent (
+    EventCode, Score, Discount, TicketCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    EventCode, Score, Discount, TicketCode,
+    'cinema_1', SYSTIMESTAMP
+FROM cinema_1.DetailEvent;
+
+INSERT INTO ST_DetailEvent (
+    EventCode, Score, Discount, TicketCode,
+    SourceSystem, InsertedTime
+)
+SELECT
+    EventCode, Score, Discount, TicketCode,
+    'cinema_2', SYSTIMESTAMP
+FROM cinema_2.DetailEvent_B2;
+
+-------------------------------------------------
+
+INSERT INTO DW_MemberType@DADeng20 (
+    MemTypeCode, MemTypeName, MemTypeDiscount, SourceSystem, EffectiveDate, EndDate
+)
+SELECT
+    MemTypeCode, MemTypeName, MemTypeDiscount, SourceSystem, SYSDATE, NULL
+FROM ST_MemberType;
+
+
+
+INSERT INTO DW_EventType@DADeng20 (
+    EvTypeCode, EvTypeName, EvTypeDescription, SourceSystem, EffectiveDate, EndDate
+)
+SELECT
+    EvTypeCode, EvTypeName, EvTypeDescription, SourceSystem, SYSDATE, NULL
+FROM ST_EventType;
+
+
+INSERT INTO DW_Licensor@DADeng20 (
+    LicCode, LicName, LicEmail, LicTel, SourceSystem, EffectiveDate, EndDate
+)
+SELECT
+    LicCode, LicName, LicEmail, LicTel, SourceSystem, SYSDATE, NULL
+FROM ST_Licensor;
+
+
+INSERT INTO DW_Member@DADeng20 (
+    MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode,
+    EffectiveDate, EndDate, SourceSystem
+)
+SELECT
+    MemCode, MemName, MemTel, MemSTDate, MemEndDate, MemTypeCode,
+    SYSDATE, NULL, SourceSystem
+FROM ST_Member;
+
+
+INSERT INTO DW_Movie@DADeng20 (
+    MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector,
+    MovieRating, MovieDuration, MovieCost, LicCode,
+    SourceSystem, EffectiveDate, EndDate
+)
+SELECT
+    MovieCode, MovieName, MovieTitle, MovieWriter, MovieDirector,
+    MovieRating, MovieDuration, MovieCost, LicCode,
+    SourceSystem, SYSDATE, NULL
+FROM ST_Movie;
+
+
+INSERT INTO DW_Ticket@DADeng20 (
+    TicketCode, TicketDate, MemSK,
+    SourceSystem, EffectiveDate, EndDate
+)
+SELECT
+    st.TicketCode,
+    st.TicketDate,
+    dw.MemSK,
+    st.SourceSystem,
+    SYSDATE,
+    NULL
+FROM ST_Ticket st
+JOIN DW_Member@DADeng20 dw
+  ON st.MemCode = dw.MemCode
+ AND st.SourceSystem = dw.SourceSystem;
+
+
+
+
+INSERT INTO DW_ShowTime@DADeng20 (
+    SHTCode, SHTSTTime, SHTEndTime, SHTLang, SHTCapacity,
+    MovieSK, SourceSystem, EffectiveDate, EndDate
+)
+SELECT
+    st.SHTCode,
+    st.SHTSTTime,
+    st.SHTEndTime,
+    st.SHTLang,
+    st.SHTCapacity,
+    m.MovieSK,
+    st.SourceSystem,
+    SYSDATE,
+    NULL
+FROM STAGINGUSER.ST_ShowTime st
+JOIN DW_Movie@DADeng20 m
+  ON st.MovieCode = m.MovieCode
+ AND st.SourceSystem = m.SourceSystem;
+
+
+INSERT INTO DW_Event@DADeng20 (
+    EventCode, EventName, EventSTDate, EventEndDate,
+    EvTypeCode, SHTSK, SourceSystem, EffectiveDate, EndDate
+)
+SELECT
+    st.EventCode,
+    st.EventName,
+    st.EventSTDate,
+    st.EvenEndDate,
+    st.EvTypeCode,
+    s.SHTSK,
+    st.SourceSystem,
+    SYSDATE,
+    NULL
+FROM STAGINGUSER.ST_Event st
+JOIN DW_ShowTime@DADeng20 s
+  ON st.SHTCode = s.SHTCode
+ AND st.SourceSystem = s.SourceSystem;
+
+INSERT INTO DW_ShowTime_Ticket@DADeng20 (
+    SHTSK, TicketSK, SourceSystem, EffectiveDate, EndDate
+)
+SELECT
+    s.SHTSK,
+    t.TicketSK,
+    st.SourceSystem,
+    SYSDATE,
+    NULL
+FROM STAGINGUSER.ST_ShowTime_Ticket st
+JOIN DW_ShowTime@DADeng20 s
+  ON st.SHTCode = s.SHTCode
+ AND st.SourceSystem = s.SourceSystem
+JOIN DW_Ticket@DADeng20 t
+  ON st.TicketCode = t.TicketCode
+ AND st.SourceSystem = t.SourceSystem;
+
+
+INSERT INTO DW_DetailEvent@DADeng20 (
+    EventSK, Score, Discount, TicketSK,
+    SourceSystem, EffectiveDate, EndDate
+)
+SELECT
+    e.EventSK,
+    st.Score,
+    st.Discount,
+    t.TicketSK,
+    st.SourceSystem,
+    SYSDATE,
+    NULL
+FROM STAGINGUSER.ST_DetailEvent st
+JOIN DW_Event@DADeng20 e
+  ON st.EventCode = e.EventCode
+ AND st.SourceSystem = e.SourceSystem
+JOIN DW_Ticket@DADeng20 t
+  ON st.TicketCode = t.TicketCode
+ AND st.SourceSystem = t.SourceSystem;
+

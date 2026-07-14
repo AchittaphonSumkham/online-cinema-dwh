@@ -1,0 +1,214 @@
+CREATE DATABASE LINK DADeng20
+CONNECT TO <username> IDENTIFIED BY <password>
+USING '(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=<db_host>)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=<service_name>)))';
+
+____________________________________________________________ DWH
+
+CREATE TABLE DW_MemberType (
+    MemTypeCode CHAR(3) PRIMARY KEY,
+    MemTypeName VARCHAR2(20) NOT NULL,
+    MemTypeDiscount NUMBER(2),
+    EffectiveDate DATE DEFAULT SYSDATE,  -- เพิ่ม EffectiveDate
+    EndDate DATE DEFAULT NULL,           -- เพิ่ม EndDate
+    SourceSystem VARCHAR2(50)           -- เพิ่ม SourceSystem
+);
+
+CREATE TABLE DW_EventType (
+    EvTypeCode CHAR(3) PRIMARY KEY,
+    EvTypeName VARCHAR2(20) NOT NULL,
+    EvTypeDescription VARCHAR2(40),
+    EffectiveDate DATE DEFAULT SYSDATE,  -- เพิ่ม EffectiveDate
+    EndDate DATE DEFAULT NULL,           -- เพิ่ม EndDate
+    SourceSystem VARCHAR2(50)           -- เพิ่ม SourceSystem
+);
+
+CREATE TABLE DW_Licensor (
+    LicCode CHAR(3) PRIMARY KEY,
+    LicName VARCHAR2(20) NOT NULL,
+    LicEmail VARCHAR2(30) NOT NULL,
+    LicTel VARCHAR2(15) NOT NULL,
+    EffectiveDate DATE DEFAULT SYSDATE,  -- เพิ่ม EffectiveDate
+    EndDate DATE DEFAULT NULL,           -- เพิ่ม EndDate
+    SourceSystem VARCHAR2(50)           -- เพิ่ม SourceSystem
+);
+
+CREATE SEQUENCE DW_Member_Seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE DW_Member (
+    MemSK NUMBER PRIMARY KEY,
+    MemCode CHAR(3) NOT NULL,
+    MemName VARCHAR2(50),
+    MemTel VARCHAR2(15),
+    MemSTDate DATE,
+    MemEndDate DATE,
+    MemTypeCode CHAR(3),
+    EffectiveDate DATE DEFAULT SYSDATE, 
+    EndDate DATE DEFAULT NULL,
+    SourceSystem VARCHAR2(50),  -- เพิ่ม SourceSystem
+    CONSTRAINT FK_DW_MemberType FOREIGN KEY (MemTypeCode)
+        REFERENCES DW_MemberType(MemTypeCode) ON DELETE SET NULL
+);
+
+CREATE OR REPLACE TRIGGER DW_Member_BI
+BEFORE INSERT ON DW_Member
+FOR EACH ROW
+BEGIN
+  SELECT DW_Member_Seq.NEXTVAL INTO :NEW.MemSK FROM DUAL;
+END;
+/
+
+CREATE SEQUENCE DW_Movie_Seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE DW_Movie (
+    MovieSK NUMBER PRIMARY KEY,
+    MovieCode CHAR(3) NOT NULL,
+    MovieName VARCHAR2(20) NOT NULL,
+    MovieTitle VARCHAR2(50) NOT NULL,
+    MovieWriter VARCHAR2(20) NOT NULL,
+    MovieDirector VARCHAR2(20) NOT NULL,
+    MovieRating NUMBER(2),
+    MovieDuration DATE,
+    MovieCost NUMBER(4) NOT NULL,
+    LicCode CHAR(3),
+    EffectiveDate DATE DEFAULT SYSDATE, 
+    EndDate DATE DEFAULT NULL,
+    SourceSystem VARCHAR2(50),  -- เพิ่ม SourceSystem
+    CONSTRAINT FK_DW_Licensor FOREIGN KEY (LicCode)
+        REFERENCES DW_Licensor(LicCode) ON DELETE SET NULL
+);
+
+CREATE OR REPLACE TRIGGER DW_Movie_BI
+BEFORE INSERT ON DW_Movie
+FOR EACH ROW
+BEGIN
+    SELECT DW_Movie_Seq.NEXTVAL INTO :NEW.MovieSK FROM DUAL;
+END;
+/
+
+CREATE SEQUENCE DW_Ticket_Seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE DW_Ticket (
+    TicketSK NUMBER PRIMARY KEY,
+    TicketCode NUMBER(4) NOT NULL,
+    TicketDate DATE,
+    MemSK NUMBER,
+    EffectiveDate DATE DEFAULT SYSDATE, 
+    EndDate DATE DEFAULT NULL,
+    SourceSystem VARCHAR2(50),  -- เพิ่ม SourceSystem
+    CONSTRAINT FK_DW_Member FOREIGN KEY (MemSK)
+        REFERENCES DW_Member(MemSK) ON DELETE SET NULL
+);
+
+CREATE OR REPLACE TRIGGER DW_Ticket_BI
+BEFORE INSERT ON DW_Ticket
+FOR EACH ROW
+BEGIN
+  SELECT DW_Ticket_Seq.NEXTVAL INTO :NEW.TicketSK FROM DUAL;
+END;
+/
+
+
+CREATE SEQUENCE DW_ShowTime_Seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE DW_ShowTime (
+    SHTSK NUMBER PRIMARY KEY,
+    SHTCode CHAR(4) NOT NULL,
+    SHTSTTime DATE,
+    SHTEndTime DATE,
+    SHTLang VARCHAR2(15),
+    SHTCapacity NUMBER(3),
+    MovieSK NUMBER,
+    EffectiveDate DATE DEFAULT SYSDATE, 
+    EndDate DATE DEFAULT NULL,
+    SourceSystem VARCHAR2(50),  -- เพิ่ม SourceSystem
+    CONSTRAINT FK_DW_Movie FOREIGN KEY (MovieSK)
+        REFERENCES DW_Movie(MovieSK) ON DELETE SET NULL
+);
+
+CREATE OR REPLACE TRIGGER DW_ShowTime_BI
+BEFORE INSERT ON DW_ShowTime
+FOR EACH ROW
+BEGIN
+  SELECT DW_ShowTime_Seq.NEXTVAL INTO :NEW.SHTSK FROM DUAL;
+END;
+/
+
+CREATE SEQUENCE DW_Event_Seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE DW_Event (
+    EventSK NUMBER PRIMARY KEY,
+    EventCode CHAR(3) NOT NULL,
+    EventName VARCHAR2(20) NOT NULL,
+    EventSTDate DATE,
+    EventEndDate DATE,
+    EvTypeCode CHAR(3),
+    SHTSK NUMBER,
+    EffectiveDate DATE DEFAULT SYSDATE, 
+    EndDate DATE DEFAULT NULL,
+    SourceSystem VARCHAR2(50),  -- เพิ่ม SourceSystem
+    CONSTRAINT FK_DW_Event_EvType FOREIGN KEY (EvTypeCode) 
+        REFERENCES DW_EventType(EvTypeCode) ON DELETE SET NULL,
+    CONSTRAINT FK_DW_Event_ShowTime FOREIGN KEY (SHTSK) 
+        REFERENCES DW_ShowTime(SHTSK) ON DELETE SET NULL
+);
+
+CREATE OR REPLACE TRIGGER DW_Event_BI
+BEFORE INSERT ON DW_Event
+FOR EACH ROW
+BEGIN
+  SELECT DW_Event_Seq.NEXTVAL INTO :NEW.EventSK FROM DUAL;
+END;
+/
+
+CREATE SEQUENCE DW_ShowTime_Ticket_Seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE DW_ShowTime_Ticket (
+    SHT_TicketSK NUMBER PRIMARY KEY,
+    SHTSK NUMBER,
+    TicketSK NUMBER,
+    SourceSystem VARCHAR2(50),
+    EffectiveDate DATE DEFAULT SYSDATE,
+    EndDate DATE DEFAULT NULL,
+    CONSTRAINT FK_DW_ShowTime FOREIGN KEY (SHTSK)
+        REFERENCES DW_ShowTime(SHTSK) ON DELETE CASCADE,
+    CONSTRAINT FK_DW_Ticket FOREIGN KEY (TicketSK)
+        REFERENCES DW_Ticket(TicketSK) ON DELETE CASCADE
+);
+
+CREATE OR REPLACE TRIGGER DW_ShowTime_Ticket_BI
+BEFORE INSERT ON DW_ShowTime_Ticket
+FOR EACH ROW
+BEGIN
+  SELECT DW_ShowTime_Ticket_Seq.NEXTVAL INTO :NEW.SHT_TicketSK FROM DUAL;
+END;
+/
+
+
+CREATE SEQUENCE DW_DetailEvent_Seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE DW_DetailEvent (
+    DetailEventSK NUMBER PRIMARY KEY,
+    EventSK NUMBER,
+    Score NUMBER(4),
+    Discount NUMBER(2),
+    TicketSK NUMBER,
+    EffectiveDate DATE DEFAULT SYSDATE, 
+    EndDate DATE DEFAULT NULL,
+    SourceSystem VARCHAR2(50),  -- เพิ่ม SourceSystem
+    CONSTRAINT FK_DW_DetailEvent_Event FOREIGN KEY (EventSK)
+        REFERENCES DW_Event(EventSK) ON DELETE CASCADE,
+    CONSTRAINT FK_DW_DetailEvent_Ticket FOREIGN KEY (TicketSK)
+        REFERENCES DW_Ticket(TicketSK) ON DELETE CASCADE
+);
+
+CREATE OR REPLACE TRIGGER DW_DetailEvent_BI
+BEFORE INSERT ON DW_DetailEvent
+FOR EACH ROW
+BEGIN
+  SELECT DW_DetailEvent_Seq.NEXTVAL INTO :NEW.DetailEventSK FROM DUAL;
+END;
+/
+
+
+----------------------------------------------------------------------
+
