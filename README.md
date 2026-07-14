@@ -14,7 +14,11 @@ cinema_2 (source B) ──┘
 - **Staging layer** (`ST_*` tables) merges both sources using `MERGE` statements, tagging each row with `SourceSystem`.
 - **Data warehouse** (`DW_*` tables) uses surrogate keys (sequences + triggers) and `EffectiveDate`/`EndDate` columns for slowly changing dimensions, loaded over an Oracle database link.
 
-See `er_diagram.png` for the full entity-relationship diagram.
+### ER diagram
+
+Conceptual model of the source systems' business domain (it does not cover the `ST_*`/`DW_*` tables).
+
+![ER diagram of the cinema domain](er_diagram.png)
 
 ## Repository structure
 
@@ -26,7 +30,7 @@ See `er_diagram.png` for the full entity-relationship diagram.
 | `SQL/Datawarehouse.txt` | Database link + warehouse tables with SCD columns |
 | `SQL/PowerBI_*.pbix` | Power BI dashboards |
 | `DML/*.xlsx` | Source data, imported into the source tables via DBeaver |
-| `er_diagram.png` | ER diagram of the whole system |
+| `er_diagram.png` | Conceptual ER diagram of the source systems' business domain |
 
 ## Running
 
