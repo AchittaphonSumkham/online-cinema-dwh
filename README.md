@@ -10,7 +10,7 @@ cinema_1 (source A) ──┐
 cinema_2 (source B) ──┘
 ```
 
-- **Two source systems** (`cinema_1`, `cinema_2`) with the same business domain but separate schemas — members, movies, showtimes, tickets, events.
+- **Two source systems** (`cinema_1`, `cinema_2`) with the same business domain but separate schemas: members, movies, showtimes, tickets, events.
 - **Staging layer** (`ST_*` tables) merges both sources using `MERGE` statements, tagging each row with `SourceSystem`.
 - **Data warehouse** (`DW_*` tables) uses surrogate keys (sequences + triggers) and `EffectiveDate`/`EndDate` columns for slowly changing dimensions, loaded over an Oracle database link.
 
@@ -32,7 +32,7 @@ See `er_diagram.png` for the full entity-relationship diagram.
 
 Execute against Oracle in this order, each in its own schema/user:
 
-1. `SQL/Cinema_1.txt` and `SQL/Cinema_2.txt` — create and seed the source systems (or import `DML/*.xlsx` via DBeaver).
-2. `SQL/Datawarehouse.txt` — create the warehouse tables (fill in the database link placeholders `<username>`, `<password>`, `<db_host>`, `<service_name>` with your own connection details).
-3. `SQL/Staging.txt` — create the staging layer, run the MERGEs, then load the warehouse.
+1. `SQL/Cinema_1.txt` and `SQL/Cinema_2.txt` to create and seed the source systems (or import `DML/*.xlsx` via DBeaver).
+2. `SQL/Datawarehouse.txt` to create the warehouse tables (fill in the database link placeholders `<username>`, `<password>`, `<db_host>`, `<service_name>` with your own connection details).
+3. `SQL/Staging.txt` to create the staging layer, run the MERGEs, then load the warehouse.
 4. Open the `.pbix` files in Power BI Desktop and point them at your warehouse.
